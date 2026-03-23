@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>BASIS — Terminal</title>
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.helius-rpc.com https://mainnet.helius-rpc.com https://api.helius.xyz; upgrade-insecure-requests;">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --hue:100;--sat:40%;--main:hsl(var(--hue),var(--sat),52%);
+  --text:hsla(var(--hue),var(--sat),52%,.92);--text-dim:hsla(var(--hue),var(--sat),52%,.55);
+  --text-soft:hsla(var(--hue),var(--sat),52%,.78);--line:hsla(var(--hue),var(--sat),52%,.18);
+  --panel-bg:hsla(var(--hue),40%,10%,.82);--shadow-in:inset 0 0 14px hsla(var(--hue),var(--sat),52%,.04);
+  --glow:0 0 6px hsla(var(--hue),var(--sat),52%,.20);--glow-lg:0 0 18px hsla(var(--hue),var(--sat),52%,.55);
+  --radius:14px;--radius-sm:10px;--pad:20px;--pad-lg:24px;
+  color-scheme:dark;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{background:#000;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:.88rem;line-height:1.7;letter-spacing:.2px;padding:20px;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+#rain{position:fixed;inset:0;z-index:0;pointer-events:none;}
+.sep{display:flex;align-items:center;gap:14px;margin:0 0 10px;color:var(--text-dim);font-size:.72rem;letter-spacing:4px;text-transform:uppercase;user-select:none;flex-shrink:0;position:relative;z-index:1;}
+.sep::before,.sep::after{content:"";flex:1;border-top:1px dashed var(--line);}
+.panel{position:relative;overflow:hidden;border-radius:var(--radius);background:var(--panel-bg);border:1px solid var(--line);box-shadow:var(--shadow-in),var(--glow);padding:0;flex:1;min-height:0;display:flex;flex-direction:column;z-index:1;}
+.panel::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(to bottom,hsla(var(--hue),var(--sat),52%,.015) 0px,hsla(var(--hue),var(--sat),52%,.015) 1px,transparent 1px,transparent 4px);}
+.panel>*{position:relative;z-index:1;}
+.panel.glitch{animation:glitchFx .3s linear;}
+@keyframes glitchFx{0%{transform:translate(0)}10%{transform:translate(-2px,1px)}20%{transform:translate(2px,-1px)}30%{transform:translate(-1px,2px)}40%{transform:translate(1px,-2px) skewX(1deg)}50%{transform:translate(-1px) skewX(-1deg)}60%{transform:translate(2px,1px)}70%{transform:translate(-2px)}80%{transform:translate(1px,1px) skewX(.5deg)}100%{transform:translate(0)}}
+
+.mbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 14px;border-bottom:1px solid var(--line);background:linear-gradient(to right,hsla(var(--hue),var(--sat),52%,.08),transparent);flex-shrink:0;}
+.mbar-l{display:flex;align-items:center;gap:9px;}
+.dots{display:flex;gap:5px;}
+.dot{width:9px;height:9px;border-radius:50%;border:1px solid hsla(var(--hue),var(--sat),52%,.35);background:rgba(0,0,0,.3);}
+.mlabel{font-size:.72rem;letter-spacing:1.4px;color:var(--text-soft);text-transform:uppercase;white-space:nowrap;}
+.mbar-r{display:flex;align-items:center;gap:8px;}
+.mbar-btn{background:none;border:1px solid var(--line);border-radius:4px;color:var(--text-dim);font-family:inherit;font-size:.60rem;padding:2px 7px;cursor:pointer;letter-spacing:.8px;text-transform:uppercase;transition:all .15s;}
+.mbar-btn:hover{border-color:var(--main);color:var(--main);}
+.mbar-btn.active{background:hsla(var(--hue),var(--sat),52%,.12);color:var(--main);border-color:var(--main);}
+.mstatus{font-size:.66rem;letter-spacing:1px;color:var(--text-dim);text-transform:uppercase;white-space:nowrap;}
+.mstatus.live{color:var(--main);animation:blk 2s ease-in-out infinite;}
+@keyframes blk{0%,100%{opacity:1}50%{opacity:.30}}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);flex-shrink:0;background:rgba(0,0,0,.2);}
+.tab{padding:5px 16px;font-size:.64rem;letter-spacing:.8px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+.tab:hover{color:var(--text-soft);background:hsla(var(--hue),var(--sat),52%,.03);}
+.tab.active{color:var(--main);border-bottom-color:var(--main);background:hsla(var(--hue),var(--sat),52%,.06);}
+.tab-x{font-size:.72rem;opacity:.4;transition:opacity .15s;line-height:1;}
+.tab-x:hover{opacity:1;}
+.tab-add{padding:5px 10px;font-size:.80rem;color:var(--text-dim);cursor:pointer;transition:color .15s;}
+.tab-add:hover{color:var(--main);}
+
+.term-wrap{flex:1;min-height:0;position:relative;overflow:hidden;}
+.term-pane{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;}
+.term-pane.hidden{display:none;}
+
+.term-out{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:14px 16px 8px;font-size:.76rem;line-height:1.65;scrollbar-width:thin;scrollbar-color:hsla(var(--hue),var(--sat),52%,.18) transparent;}
+.term-out::-webkit-scrollbar{width:5px;}
+.term-out::-webkit-scrollbar-track{background:transparent;}
+.term-out::-webkit-scrollbar-thumb{background:hsla(var(--hue),var(--sat),52%,.18);border-radius:3px;}
+
+.t-line{margin-bottom:2px;word-break:break-all;}
+.t-cmd{color:var(--main);font-weight:600;}
+.t-prompt{color:var(--text-dim);}
+.t-info{color:var(--text);}
+.t-dim{color:var(--text-dim);}
+.t-err{color:#e07070;}
+.t-accent{color:var(--main);font-weight:600;}
+.t-warn{color:#d4a843;}
+.t-val{color:#98d6e8;font-weight:500;}
+.t-sep{color:hsla(var(--hue),var(--sat),52%,.22);font-size:.68rem;letter-spacing:1px;margin:5px 0 3px;user-select:none;}
+.t-table{margin:4px 0 6px;font-size:.70rem;}
+.t-table-row{display:flex;gap:0;border-bottom:1px solid hsla(var(--hue),var(--sat),52%,.06);padding:2px 0;}
+.t-table-row.hdr{color:var(--text-dim);font-size:.64rem;letter-spacing:.8px;text-transform:uppercase;border-bottom:1px dashed var(--line);}
+.t-table-cell{flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 8px 1px 0;}
+.t-ascii{color:hsla(var(--hue),var(--sat),52%,.30);font-size:.62rem;line-height:1.15;white-space:pre;margin-bottom:6px;}
+.t-addr{text-decoration:underline;text-decoration-color:hsla(var(--hue),var(--sat),52%,.20);cursor:pointer;transition:color .12s;}
+.t-addr:hover{color:var(--main)!important;}
+.t-block{position:relative;margin:4px 0;padding:6px 10px;background:rgba(0,0,0,.25);border:1px solid hsla(var(--hue),var(--sat),52%,.08);border-radius:6px;}
+.t-copy{position:absolute;top:4px;right:6px;background:none;border:1px solid var(--line);border-radius:3px;color:var(--text-dim);font-family:inherit;font-size:.56rem;padding:1px 6px;cursor:pointer;letter-spacing:.5px;text-transform:uppercase;transition:all .15s;opacity:.5;}
+.t-copy:hover{opacity:1;border-color:var(--main);color:var(--main);}
+
+.term-in{display:flex;align-items:center;gap:0;padding:8px 16px;border-top:1px solid var(--line);flex-shrink:0;}
+.term-in .prompt{color:var(--text-dim);font-weight:600;font-size:.78rem;white-space:nowrap;padding-right:8px;user-select:none;}
+.term-in input{flex:1;background:transparent;border:none;outline:none;color:var(--main);font-family:inherit;font-size:.78rem;font-weight:500;caret-color:var(--main);letter-spacing:.3px;}
+.term-in input::placeholder{color:hsla(var(--hue),var(--sat),52%,.18);}
+
+/* STATUS BAR */
+.sbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 14px;border-top:1px solid var(--line);flex-shrink:0;font-size:.60rem;color:var(--text-dim);letter-spacing:.5px;text-transform:uppercase;flex-wrap:wrap;background:rgba(0,0,0,.25);}
+.sbar span{white-space:nowrap;}
+.sbar .s-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--main);margin-right:4px;animation:blk 2s ease-in-out infinite;}
+
+.t-spin{display:inline-block;animation:tspin .6s linear infinite;}
+@keyframes tspin{to{transform:rotate(360deg)}}
+
+@media(max-width:600px){body{padding:12px;}.term-out{font-size:.70rem;padding:10px 12px;}.tab{padding:4px 10px;font-size:.60rem;}}
+@media(prefers-reduced-motion:reduce){.mstatus.live,.sbar .s-dot{animation:none!important;}.panel::before,.panel.glitch{animation:none!important;display:block;}}
+</style>
+</head>
+<body>
+<canvas id="rain"></canvas>
+<div class="sep"><span>TERMINAL</span></div>
+<section class="panel" id="panel">
+  <div class="mbar">
+    <div class="mbar-l"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div><div class="mlabel">BASIS://TERMINAL</div></div>
+    <div class="mbar-r">
+      <button class="mbar-btn" id="btnSound" title="Toggle sounds">🔊 SFX</button>
+      <button class="mbar-btn" id="btnTheme" title="Cycle theme">◐ THEME</button>
+      <div class="mstatus live" id="sts">ONLINE</div>
+    </div>
+  </div>
+  <div class="tabs" id="tabBar"><div class="tab active" data-tab="0">Terminal 1</div><div class="tab-add" id="tabAdd" title="New tab">+</div></div>
+  <div class="term-wrap" id="termWrap"></div>
+  <div class="term-in"><span class="prompt">basis &gt;</span><input type="text" id="cmdInput" placeholder="type a command…" spellcheck="false" autocomplete="off" autofocus></div>
+  <div class="sbar"><span><span class="s-dot"></span>Connected — Helius RPC</span><span id="sCmd">Last: —</span><span id="sHolders">Holders: —</span><span id="sTime"></span></div>
+</section>
+
+<script>
+'use strict';
+
+const MINT='A5BJBQUTR5sTzkM89hRDuApWyvgjdXpR7B7rW1r9pump';
+const SUPPLY=1e9;const DECIMALS=6;
+const KEY='c417718c-6576-4e1b-9f59-557124378a12';
+const RPC=`https://mainnet.helius-rpc.com/?api-key=${KEY}`;
+const HELIUS_REST='https://api.helius.xyz/v0';
+const KNOWN={'39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg':'Pump.fun Bonding Curve'};
+
+const THEMES=[
+  {name:'Green',hue:100,sat:'40%'},
+  {name:'Amber',hue:40,sat:'55%'},
+  {name:'Cyan',hue:185,sat:'50%'},
+  {name:'Red',hue:0,sat:'45%'},
+];
+let themeIdx=0;
+let soundOn=true;
+let cachedHolders=null;
+
+/* ═══ TABS ═══ */
+let tabs=[{id:0,name:'Terminal 1'}];
+let activeTab=0;let tabCounter=1;
+
+function createPane(id){
+  const pane=document.createElement('div');
+  pane.className='term-pane';pane.id='pane-'+id;
+  const out=document.createElement('div');out.className='term-out';out.id='out-'+id;
+  pane.appendChild(out);
+  document.getElementById('termWrap').appendChild(pane);
+  return pane;
+}
+function switchTab(id){
+  activeTab=id;
+  document.querySelectorAll('.term-pane').forEach(p=>p.classList.add('hidden'));
+  const pane=document.getElementById('pane-'+id);if(pane)pane.classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(t=>{t.classList.toggle('active',parseInt(t.dataset.tab)===id);});
+  document.getElementById('cmdInput').focus();
+}
+function renderTabs(){
+  const bar=document.getElementById('tabBar');
+  bar.innerHTML='';
+  tabs.forEach(t=>{
+    const el=document.createElement('div');el.className='tab'+(t.id===activeTab?' active':'');el.dataset.tab=t.id;
+    el.innerHTML=`${esc(t.name)}${tabs.length>1?'<span class="tab-x" data-close="'+t.id+'">✕</span>':''}`;
+    el.addEventListener('click',e=>{
+      if(e.target.classList.contains('tab-x')){closeTab(parseInt(e.target.dataset.close));return;}
+      switchTab(t.id);
+    });
+    bar.appendChild(el);
+  });
+  const add=document.createElement('div');add.className='tab-add';add.textContent='+';add.title='New tab';
+  add.addEventListener('click',()=>{
+    const id=tabCounter++;
+    tabs.push({id,name:'Terminal '+(id+1)});
+    createPane(id);
+    renderTabs();switchTab(id);
+    sfx('beep');
+  });
+  bar.appendChild(add);
+}
+function closeTab(id){
+  if(tabs.length<=1)return;
+  tabs=tabs.filter(t=>t.id!==id);
+  const pane=document.getElementById('pane-'+id);if(pane)pane.remove();
+  if(activeTab===id)switchTab(tabs[0].id);
+  renderTabs();
+}
+
+/* ═══ HELPERS ═══ */
+function fA(n){if(n>=1e9)return(n/1e9).toFixed(3)+'B';if(n>=1e6)return(n/1e6).toFixed(3)+'M';if(n>=1e3)return(n/1e3).toFixed(2)+'K';return n.toLocaleString('en-US',{maximumFractionDigits:2});}
+function fP(n,d){return(n*100).toFixed(d||2)+'%';}
+function sh(a){return a?a.slice(0,6)+'…'+a.slice(-4):'—';}
+function now(){return new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function getOut(){return document.getElementById('out-'+activeTab)||document.querySelector('.term-out');}
+
+/* ═══ SOUND ═══ */
+const AudioCtx=window.AudioContext||window.webkitAudioContext;
+let audioCtx=null;
+function ensureAudio(){if(!audioCtx)try{audioCtx=new AudioCtx();}catch(e){}}
+function sfx(type){
+  if(!soundOn)return;ensureAudio();if(!audioCtx)return;
+  const osc=audioCtx.createOscillator();const gain=audioCtx.createGain();
+  osc.connect(gain);gain.connect(audioCtx.destination);
+  const t=audioCtx.currentTime;
+  if(type==='key'){osc.type='square';osc.frequency.value=800+Math.random()*400;gain.gain.setValueAtTime(.015,t);gain.gain.exponentialRampToValueAtTime(.001,t+.04);osc.start(t);osc.stop(t+.04);}
+  else if(type==='beep'){osc.type='sine';osc.frequency.value=660;gain.gain.setValueAtTime(.04,t);gain.gain.exponentialRampToValueAtTime(.001,t+.12);osc.start(t);osc.stop(t+.12);}
+  else if(type==='error'){osc.type='sawtooth';osc.frequency.value=180;gain.gain.setValueAtTime(.06,t);gain.gain.exponentialRampToValueAtTime(.001,t+.2);osc.start(t);osc.stop(t+.2);}
+  else if(type==='done'){osc.type='sine';osc.frequency.value=880;gain.gain.setValueAtTime(.03,t);gain.gain.exponentialRampToValueAtTime(.001,t+.15);osc.start(t);osc.stop(t+.15);}
+}
+
+/* ═══ GLITCH ═══ */
+function glitch(){const p=document.getElementById('panel');p.classList.add('glitch');setTimeout(()=>p.classList.remove('glitch'),300);}
+
+/* ═══ PRINT ═══ */
+function print(html,cls){const out=getOut();const el=document.createElement('div');el.className='t-line'+(cls?' '+cls:'');el.innerHTML=html;out.appendChild(el);out.scrollTop=out.scrollHeight;return el;}
+function printCmd(cmd){print(`<span class="t-prompt">basis &gt;</span> <span class="t-cmd">${esc(cmd)}</span>`);}
+function printInfo(txt){return print(`<span class="t-info">${txt}</span>`);}
+function printDim(txt){print(`<span class="t-dim">${txt}</span>`);}
+function printErr(txt){sfx('error');glitch();print(`<span class="t-err">ERROR: ${esc(txt)}</span>`);}
+function printAccent(txt){print(`<span class="t-accent">${txt}</span>`);}
+function printSep(txt){print(txt||'────────────────────────────────────────','t-sep');}
+function printAscii(txt){const out=getOut();const el=document.createElement('div');el.className='t-ascii';el.textContent=txt;out.appendChild(el);out.scrollTop=out.scrollHeight;}
+
+/* Typewriter effect */
+async function typewrite(html,spd){
+  const out=getOut();const el=document.createElement('div');el.className='t-line';out.appendChild(el);
+  const tmp=document.createElement('div');tmp.innerHTML=`<span class="t-info">${html}</span>`;
+  const text=tmp.textContent;
+  const speed=spd||12;
+  let i=0;
+  while(i<text.length){
+    el.innerHTML=`<span class="t-info">${html.slice(0,html.indexOf(text[i])+i+1)}▌</span>`;
+    /* Fast version: batch chars */
+    const batch=Math.min(3+Math.floor(Math.random()*2),text.length-i);
+    i+=batch;
+    el.innerHTML=`<span class="t-info">${html.slice(0,getCharIndex(html,i))}▌</span>`;
+    await sleep(speed);
+  }
+  el.innerHTML=`<span class="t-info">${html}</span>`;
+  out.scrollTop=out.scrollHeight;
+}
+function getCharIndex(html,charPos){
+  let count=0,inTag=false;
+  for(let i=0;i<html.length;i++){
+    if(html[i]==='<')inTag=true;
+    if(!inTag)count++;
+    if(html[i]==='>')inTag=false;
+    if(count>=charPos)return i+1;
+  }
+  return html.length;
+}
+
+/* Clickable address */
+function addr(a){return`<span class="t-addr" data-wallet="${esc(a)}">${KNOWN[a]||sh(a)}</span>`;}
+function addrFull(a){return`<span class="t-addr" data-wallet="${esc(a)}" style="color:rgba(255,255,255,.80)">${sh(a)}</span>`;}
+
+/* Copy block */
+function printBlock(content){
+  const out=getOut();const wrap=document.createElement('div');wrap.className='t-block';
+  wrap.innerHTML=content+'<button class="t-copy" onclick="copyBlock(this)">Copy</button>';
+  out.appendChild(wrap);out.scrollTop=out.scrollHeight;
+}
+
+function copyBlock(btn){
+  const block=btn.parentElement;const text=block.textContent.replace('Copy','').trim();
+  navigator.clipboard.writeText(text).then(()=>{btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1200);}).catch(()=>{});
+}
+
+function printTable(headers,rows,widths){
+  const out=getOut();const tbl=document.createElement('div');tbl.className='t-table';
+  const hdr=document.createElement('div');hdr.className='t-table-row hdr';
+  headers.forEach((h,i)=>{const c=document.createElement('div');c.className='t-table-cell';c.style.width=widths[i];c.textContent=h;hdr.appendChild(c);});
+  tbl.appendChild(hdr);
+  for(const row of rows){const r=document.createElement('div');r.className='t-table-row';row.forEach((val,i)=>{const c=document.createElement('div');c.className='t-table-cell';c.style.width=widths[i];c.innerHTML=val;r.appendChild(c);});tbl.appendChild(r);}
+  out.appendChild(tbl);out.scrollTop=out.scrollHeight;
+}
+
+let spinEl=null;
+function showSpin(msg){const out=getOut();spinEl=document.createElement('div');spinEl.className='t-line';spinEl.innerHTML=`<span class="t-dim"><span class="t-spin">◜</span> ${esc(msg)}</span>`;out.appendChild(spinEl);out.scrollTop=out.scrollHeight;}
+function hideSpin(){if(spinEl){spinEl.remove();spinEl=null;}}
+
+/* ═══ RPC ═══ */
+async function rpc(method,params){
+  const r=await fetch(RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:'t',method,params})});
+  if(!r.ok)throw new Error(`HTTP ${r.status}`);const j=await r.json();if(j.error)throw new Error(j.error.message||'RPC error');return j.result;
+}
+
+/* ═══ FETCH ALL HOLDERS (cached) ═══ */
+async function fetchHolders(force){
+  if(cachedHolders&&!force)return cachedHolders;
+  const owners=new Map();let page=1;
+  while(true){
+    const res=await rpc('getTokenAccounts',{mint:MINT,page,limit:1000,displayOptions:{}});
+    const ac=res?.token_accounts??[];if(!ac.length)break;
+    for(const a of ac){if(!a.owner)continue;const amt=(Number(a.amount)||0)/1e6;if(amt>0)owners.set(a.owner,(owners.get(a.owner)||0)+amt);}
+    if(ac.length<1000)break;page++;await sleep(50);
+  }
+  cachedHolders=[...owners.entries()].map(([o,a])=>({owner:o,amount:a})).sort((a,b)=>b.amount-a.amount);
+  document.getElementById('sHolders').textContent='Holders: '+cachedHolders.length.toLocaleString();
+  return cachedHolders;
+}
+
+function tierName(a){if(a>=1e7)return'Whale';if(a>=1e6)return'Shark';if(a>=1e5)return'Dolphin';if(a>=1e4)return'Fish';if(a>=1e3)return'Shrimp';if(a>=1)return'Plankton';return'Dust';}
+
+/* ═══ COMMANDS ═══ */
+async function cmdHelp(){
+  printSep();printAccent('AVAILABLE COMMANDS:');printInfo('');
+  const cmds=[
+    ['holders','holder count + tier breakdown + top wallets'],
+    ['whales','top 10 whale wallets'],
+    ['balance &lt;wallet&gt;','check a wallet\'s $BASIS balance'],
+    ['supply','token supply breakdown + concentration'],
+    ['tx &lt;wallet&gt;','recent $BASIS transactions'],
+    ['info','token metadata and contract info'],
+    ['rank &lt;wallet&gt;','holder rank among all wallets'],
+    ['compare &lt;w1&gt; &lt;w2&gt;','side-by-side wallet comparison'],
+    ['chart','ASCII holder distribution chart'],
+    ['watch &lt;cmd&gt;','auto-refresh command every 30s'],
+    ['export &lt;cmd&gt;','save command output as .txt'],
+    ['alias &lt;name&gt; = &lt;cmd&gt;','create command shortcut'],
+    ['motd','message of the day'],
+    ['theme','cycle terminal color theme'],
+    ['clear','clear terminal'],
+    ['help','show this message'],
+  ];
+  for(const[c,d]of cmds)printInfo(`  <span class="t-accent">${c.padEnd(22)}</span> <span class="t-dim">— ${d}</span>`);
+  printInfo('');printDim('  TIP: Use Tab for autocomplete, ↑↓ for history');
+  printDim('  TIP: Click any wallet address to check its balance');
+  printDim('  TIP: Pipe output: whales | top 5');
+  printSep();
+}
+
+async function cmdHolders(){
+  showSpin('Fetching holder data…');
+  try{
+    const sorted=await fetchHolders(true);hideSpin();
+    const total=sorted.length;
+    printSep();printAccent('$BASIS HOLDER SUMMARY');
+    printInfo(`  Total holders: <span class="t-val">${total.toLocaleString()}</span>`);
+    printInfo(`  Total supply:  <span class="t-val">${fA(SUPPLY)}</span>`);
+    const tiers=[{n:'Whale',min:1e7,max:Infinity},{n:'Shark',min:1e6,max:1e7},{n:'Dolphin',min:1e5,max:1e6},{n:'Fish',min:1e4,max:1e5},{n:'Shrimp',min:1e3,max:1e4},{n:'Plankton',min:1,max:1e3},{n:'Dust',min:0,max:1}];
+    printInfo('');printDim('  TIER BREAKDOWN:');
+    for(const t of tiers){
+      const count=sorted.filter(h=>h.amount>=t.min&&h.amount<t.max).length;
+      const bar='█'.repeat(Math.min(Math.ceil(count/total*40),40))+'░'.repeat(Math.max(40-Math.ceil(count/total*40),0));
+      printInfo(`  ${t.n.padEnd(9)} <span class="t-dim">${bar}</span> <span class="t-val">${count.toLocaleString()}</span>`);
+    }
+    printInfo('');printDim('  TOP 5 HOLDERS:');
+    printTable(['#','Wallet','Amount','% Supply'],sorted.slice(0,5).map((h,i)=>[`<span class="t-dim">${i+1}</span>`,addr(h.owner),`<span class="t-val">${fA(h.amount)}</span>`,`<span class="t-dim">${fP(h.amount/SUPPLY)}</span>`]),['28px','180px','100px','80px']);
+    printSep();sfx('done');
+  }catch(e){hideSpin();printErr(e.message);}
+}
+
+async function cmdWhales(){
+  showSpin('Scanning whale wallets…');
+  try{
+    const sorted=await fetchHolders();hideSpin();
+    const top10=sorted.slice(0,10);const whaleTotal=top10.reduce((s,h)=>s+h.amount,0);
+    printSep();printAccent('TOP 10 WHALE WALLETS');
+    printTable(['#','Wallet','Holdings','% Supply','Label'],top10.map((h,i)=>[`<span class="t-dim">${(i+1).toString().padStart(2)}</span>`,addrFull(h.owner),`<span class="t-val">${fA(h.amount)}</span>`,`<span class="t-dim">${fP(h.amount/SUPPLY)}</span>`,KNOWN[h.owner]?`<span class="t-warn">${KNOWN[h.owner]}</span>`:'<span class="t-dim">—</span>']),['28px','120px','100px','80px','180px']);
+    printInfo(`  Combined: <span class="t-val">${fA(whaleTotal)}</span> <span class="t-dim">(${fP(whaleTotal/SUPPLY)} of supply)</span>`);
+    printSep();sfx('done');
+  }catch(e){hideSpin();printErr(e.message);}
+}
+
+async function cmdBalance(wallet){
+  if(!wallet||wallet.length<32){printErr('Usage: balance <wallet_address>');return;}
+  showSpin(`Checking balance for ${sh(wallet)}…`);
+  try{
+    const res=await rpc('getTokenAccounts',{mint:MINT,owner:wallet,displayOptions:{}});hideSpin();
+    let total=0;for(const a of(res?.token_accounts??[]))total+=(Number(a.amount)||0)/1e6;
+    printSep();printAccent('WALLET BALANCE');
+    printBlock(`  Address:  ${wallet}\n  Token:    $BASIS\n  Balance:  ${fA(total)} $BASIS\n  % Supply: ${fP(total/SUPPLY,4)}\n  Tier:     ${tierName(total)}${KNOWN[wallet]?'\n  Label:    '+KNOWN[wallet]:''}`);
+    printSep();sfx('done');
+  }catch(e){hideSpin();printErr(e.message);}
+}
+
+async function cmdSupply(){
+  showSpin('Fetching supply data…');
+  try{
+    const sorted=await fetchHolders();hideSpin();
+    const circ=sorted.reduce((s,h)=>s+h.amount,0);
+    const top10=sorted.slice(0,10).reduce((s,h)=>s+h.amount,0);
+    const top50=sorted.slice(0,50).reduce((s,h)=>s+h.amount,0);
+    const top100=sorted.slice(0,100).reduce((s,h)=>s+h.amount,0);
+    const bonding=sorted.find(h=>KNOWN[h.owner]);const bondAmt=bonding?bonding.amount:0;
+    printSep();printAccent('$BASIS SUPPLY BREAKDOWN');printInfo('');
+    printInfo(`  Total Supply:      <span class="t-val">${fA(SUPPLY)}</span>`);
+    printInfo(`  In Wallets:        <span class="t-val">${fA(circ)}</span> <span class="t-dim">(${fP(circ/SUPPLY)})</span>`);
+    if(bondAmt>0)printInfo(`  Bonding Curve:     <span class="t-warn">${fA(bondAmt)}</span> <span class="t-dim">(${fP(bondAmt/SUPPLY)})</span>`);
+    printInfo('');printDim('  CONCENTRATION:');
+    printInfo(`  Top 10 hold:       <span class="t-val">${fA(top10)}</span> <span class="t-dim">(${fP(top10/SUPPLY)})</span>`);
+    printInfo(`  Top 50 hold:       <span class="t-val">${fA(top50)}</span> <span class="t-dim">(${fP(top50/SUPPLY)})</span>`);
+    printInfo(`  Top 100 hold:      <span class="t-val">${fA(top100)}</span> <span class="t-dim">(${fP(top100/SUPPLY)})</span>`);
+    printInfo(`  Remaining:         <span class="t-val">${fA(circ-top100)}</span> <span class="t-dim">(${fP((circ-top100)/SUPPLY)})</span>`);
+    const bW=40,b10=Math.round(top10/circ*bW),b50=Math.round((top50-top10)/circ*bW),b100=Math.round((top100-top50)/circ*bW),bR=bW-b10-b50-b100;
+    printInfo('');printInfo(`  <span class="t-accent">${'█'.repeat(b10)}</span><span class="t-warn">${'█'.repeat(b50)}</span><span class="t-val">${'█'.repeat(b100)}</span><span class="t-dim">${'░'.repeat(Math.max(bR,0))}</span>`);
+    printInfo(`  <span class="t-accent">Top10</span> <span class="t-warn">Top50</span> <span class="t-val">Top100</span> <span class="t-dim">Rest</span>`);
+    printSep();sfx('done');
+  }catch(e){hideSpin();printErr(e.message);}
+}
+
+async function cmdTx(wallet){
+  if(!wallet||wallet.length<32){printErr('Usage: tx <wallet_address>');return;}
+  showSpin(`Fetching transactions for ${sh(wallet)}…`);
+  try{
+    const url=`${HELIUS_REST}/addresses/${wallet}/transactions?api-key=${KEY}&limit=20&type=TRANSFER`;
+    const r=await fetch(url);if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const txs=await r.json();hideSpin();
+    const bTxs=[];
+    for(const tx of txs){if(!tx.tokenTransfers)continue;for(const tt of tx.tokenTransfers){if(tt.mint!==MINT)continue;bTxs.push({from:tt.fromUserAccount,to:tt.toUserAccount,amount:tt.tokenAmount||0,time:tx.timestamp?new Date(tx.timestamp*1000):null,type:tt.fromUserAccount===wallet?'SENT':'RECEIVED'});}}
+    printSep();printAccent('RECENT $BASIS TRANSACTIONS');
+    printInfo(`  Wallet: ${addrFull(wallet)}`);printInfo(`  Found:  <span class="t-val">${bTxs.length}</span> transfers`);printInfo('');
+    if(!bTxs.length){printDim('  No $BASIS transfers found.');}
+    else{printTable(['Type','Amount','Counterparty','Time'],bTxs.slice(0,15).map(t=>[t.type==='SENT'?'<span class="t-err">SENT</span>':'<span class="t-accent">RECV</span>',`<span class="t-val">${fA(t.amount)}</span>`,`<span class="t-dim">${sh(t.type==='SENT'?t.to:t.from)}</span>`,t.time?`<span class="t-dim">${t.time.toLocaleDateString()} ${t.time.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>`:'—']),['55px','95px','110px','135px']);}
+    printSep();sfx('done');
+  }catch(e){hideSpin();printErr(e.message);}
+}
+
+async function cmdInfo(){
+  showSpin('Fetching token metadata…');
+  try{
+    const res=await rpc('getAsset',{id:MINT});hideSpin();
+    printSep();printAccent('$BASIS TOKEN INFO');printInfo('');
+    printBlock(`  Name:        ${res?.content?.metadata?.name||'BASIS'}\n  Symbol:      ${res?.content?.metadata?.symbol||'BASIS'}\n  Decimals:    ${DECIMALS}\n  Total Supply: ${fA(SUPPLY)}\n\n  Mint:        ${MINT}\n  Standard:    ${res?.interface||'FungibleToken'}`);
+    printSep();sfx('done');
+  }catch(e){hideSpin();printErr(e.message);}
+}
+
+async function cmdRank(wallet){
+  if(!wallet||wallet.length<32){printErr('Usage: rank <wallet_address>');return;}
+  showSpin(`Finding rank for ${sh(wallet)}…`);
+  try{
+    const sorted=await fetchHolders();hideSpin();
+    const idx=sorted.findIndex(h=>h.owner===wallet);
+    if(idx===-1){printErr('Wallet not found among $BASIS holders.');return;}
+    const h=sorted[idx];const pctile=((sorted.length-idx)/sorted.length*100).toFixed(1);
+    printSep();printAccent('WALLET RANK');
+    printInfo(`  Address:    ${addrFull(wallet)}`);
+    printInfo(`  Rank:       <span class="t-val" style="font-size:.90rem">#${(idx+1).toLocaleString()}</span> <span class="t-dim">of ${sorted.length.toLocaleString()}</span>`);
+    printInfo(`  Balance:    <span class="t-val">${fA(h.amount)}</span> <span class="t-dim">$BASIS</span>`);
+    printInfo(`  Percentile: <span class="t-accent">Top ${pctile}%</span>`);
+    printInfo(`  Tier:       <span class="t-accent">${tierName(h.amount)}</span>`);
+    /* Mini rank bar */
+    const pos=Math.round((idx/sorted.length)*40);
+    printInfo(`  ${'░'.repeat(pos)}<span class="t-accent">▓</span>${'░'.repeat(40-pos-1)} <span class="t-dim">${fP(idx/sorted.length)}</span>`);
+    printSep();sfx('done');
+  }catch(e){hideSpin();printErr(e.message);}
+}
+
+async function cmdCompare(args){
+  const parts=args.trim().split(/\s+/);
+  if(parts.length<2||parts[0].length<32||parts[1].length<32){printErr('Usage: compare <wallet1> <wallet2>');return;}
+  showSpin('Comparing wallets…');
+  try{
+    const sorted=await fetchHolders();hideSpin();
+    const w=[parts[0],parts[1]];const data=w.map(addr=>{const idx=sorted.findIndex(h=>h.owner===addr);return idx>=0?{...sorted[idx],rank:idx+1}:{owner:addr,amount:0,rank:'N/A'};});
+    printSep();printAccent('WALLET COMPARISON');
+    printTable(['','Wallet A','Wallet B'],[
+      ['Address',addrFull(w[0]),addrFull(w[1])],
+      ['Balance',`<span class="t-val">${fA(data[0].amount)}</span>`,`<span class="t-val">${fA(data[1].amount)}</span>`],
+      ['% Supply',`<span class="t-dim">${fP(data[0].amount/SUPPLY)}</span>`,`<span class="t-dim">${fP(data[1].amount/SUPPLY)}</span>`],
+      ['Rank',`<span class="t-accent">#${data[0].rank.toLocaleString?.()??data[0].rank}</span>`,`<span class="t-accent">#${data[1].rank.toLocaleString?.()??data[1].rank}</span>`],
+      ['Tier',`<span class="t-accent">${tierName(data[0].amount)}</span>`,`<span class="t-accent">${tierName(data[1].amount)}</span>`],
+    ],['80px','180px','180px']);
+    const diff=data[0].amount-data[1].amount;
+    printInfo(diff>0?`  A holds <span class="t-val">${fA(Math.abs(diff))}</span> more`:`  B holds <span class="t-val">${fA(Math.abs(diff))}</span> more`);
+    printSep();sfx('done');
+  }catch(e){hideSpin();printErr(e.message);}
+}
+
+async function cmdChart(){
+  showSpin('Building chart…');
+  try{
+    const sorted=await fetchHolders();hideSpin();
+    const tiers=[{n:'Whale',min:1e7,max:Infinity},{n:'Shark',min:1e6,max:1e7},{n:'Dolphin',min:1e5,max:1e6},{n:'Fish',min:1e4,max:1e5},{n:'Shrimp',min:1e3,max:1e4},{n:'Plankton',min:1,max:1e3},{n:'Dust',min:0,max:1}];
+    const data=tiers.map(t=>{const holders=sorted.filter(h=>h.amount>=t.min&&h.amount<t.max);return{name:t.n,count:holders.length,total:holders.reduce((s,h)=>s+h.amount,0)};});
+    const maxCount=Math.max(...data.map(d=>d.count));
+    printSep();printAccent('HOLDER DISTRIBUTION CHART');printInfo('');
+    printDim('  BY COUNT:');
+    for(const d of data){const w=Math.round(d.count/maxCount*35);printInfo(`  ${d.name.padEnd(9)} ${'<span class="t-accent">'+('█'.repeat(w))+'</span>'}${'░'.repeat(35-w)} <span class="t-val">${d.count.toLocaleString()}</span>`);}
+    printInfo('');printDim('  BY SUPPLY HELD:');
+    const maxTotal=Math.max(...data.map(d=>d.total));
+    for(const d of data){const w=Math.round(d.total/maxTotal*35);printInfo(`  ${d.name.padEnd(9)} ${'<span class="t-warn">'+('█'.repeat(w))+'</span>'}${'░'.repeat(35-w)} <span class="t-val">${fA(d.total)}</span>`);}
+    printSep();sfx('done');
+  }catch(e){hideSpin();printErr(e.message);}
+}
+
+function cmdMotd(){
+  const messages=[
+    'Diamond hands build empires. 💎',
+    '$BASIS: Built different. Built to last.',
+    'The bonding curve doesn\'t sleep.',
+    'New holders joining daily. The community grows.',
+    'Check "holders" to see who\'s accumulating.',
+    'Real builders don\'t need hype. They need BASIS.',
+    'Your wallet, your keys, your $BASIS.',
+    'The terminal sees all on-chain data. Nothing is hidden.',
+  ];
+  const msg=messages[Math.floor(Math.random()*messages.length)];
+  printSep();printAccent('MESSAGE OF THE DAY');printInfo('');printInfo(`  <span class="t-warn">"${msg}"</span>`);printInfo('');printDim(`  — ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}`);printSep();
+}
+
+/* ═══ WATCH ═══ */
+let watchTimer=null;let watchCmd='';
+function cmdWatch(cmd){
+  if(!cmd){if(watchTimer){clearInterval(watchTimer);watchTimer=null;watchCmd='';printInfo('Watch stopped.');return;}printErr('Usage: watch <command>');return;}
+  if(watchTimer){clearInterval(watchTimer);watchTimer=null;}
+  watchCmd=cmd;
+  printInfo(`<span class="t-accent">WATCHING:</span> <span class="t-dim">"${esc(cmd)}" — refreshing every 30s. Run "watch" to stop.</span>`);
+  runCmd(cmd);
+  watchTimer=setInterval(()=>{printDim(`── auto-refresh: ${now()} ──`);runCmd(watchCmd);},30000);
+}
+
+/* ═══ EXPORT ═══ */
+async function cmdExport(cmd){
+  if(!cmd){printErr('Usage: export <command>');return;}
+  /* Capture output */
+  const out=getOut();const before=out.children.length;
+  await runCmd(cmd,true);
+  const after=out.children.length;
+  let text='BASIS Terminal Export — '+now()+'\nCommand: '+cmd+'\n\n';
+  for(let i=before;i<after;i++){text+=out.children[i].textContent+'\n';}
+  const blob=new Blob([text],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='basis-export-'+Date.now()+'.txt';a.click();
+  printInfo('<span class="t-accent">✓ Exported to file.</span>');sfx('done');
+}
+
+/* ═══ ALIASES ═══ */
+let aliases={};
+try{aliases=JSON.parse(localStorage.getItem('basis_aliases')||'{}');}catch(e){}
+function saveAliases(){try{localStorage.setItem('basis_aliases',JSON.stringify(aliases));}catch(e){}}
+
+function cmdAlias(args){
+  if(!args){
+    printSep();printAccent('ALIASES:');
+    const keys=Object.keys(aliases);
+    if(!keys.length)printDim('  No aliases set. Use: alias <name> = <command>');
+    else keys.forEach(k=>printInfo(`  <span class="t-accent">${esc(k)}</span> = <span class="t-dim">${esc(aliases[k])}</span>`));
+    printSep();return;
+  }
+  const match=args.match(/^(\S+)\s*=\s*(.+)$/);
+  if(!match){printErr('Usage: alias <name> = <command>');return;}
+  aliases[match[1]]=match[2];saveAliases();
+  printInfo(`Alias set: <span class="t-accent">${esc(match[1])}</span> → <span class="t-dim">${esc(match[2])}</span>`);
+}
+
+/* ═══ EASTER EGGS ═══ */
+function cmdMatrix(){
+  document.getElementById('rain').style.zIndex='9999';document.getElementById('rain').style.pointerEvents='auto';
+  printInfo('<span class="t-accent">FULL MATRIX MODE — click anywhere to exit</span>');
+  document.getElementById('rain').addEventListener('click',function once(){document.getElementById('rain').style.zIndex='0';document.getElementById('rain').style.pointerEvents='none';},{once:true});
+}
+
+function cmdMoon(){
+  printAscii(`
+        *  .  *
+     .    🚀    .
+   *    TO THE    *
+  .     MOON      .
+   *   $BASIS    *
+     .        .
+        *  *
+  `);
+  sfx('done');
+}
+
+/* ═══ THEME ═══ */
+function setTheme(idx){
+  themeIdx=idx%THEMES.length;const t=THEMES[themeIdx];
+  document.documentElement.style.setProperty('--hue',t.hue);
+  document.documentElement.style.setProperty('--sat',t.sat);
+  try{localStorage.setItem('basis_theme',themeIdx);}catch(e){}
+}
+
+/* ═══ PIPE FILTER ═══ */
+function applyPipe(pipe){
+  const out=getOut();
+  const match=pipe.match(/top\s+(\d+)/i);
+  if(match){
+    const n=parseInt(match[1]);
+    const rows=out.querySelectorAll('.t-table-row:not(.hdr)');
+    rows.forEach((r,i)=>{if(i>=n)r.style.display='none';});
+    printDim(`  (filtered to top ${n})`);
+    return;
+  }
+  const grepMatch=pipe.match(/grep\s+(.+)/i);
+  if(grepMatch){
+    const term=grepMatch[1].toLowerCase();
+    const lines=out.querySelectorAll('.t-line,.t-table-row');
+    lines.forEach(l=>{if(!l.textContent.toLowerCase().includes(term))l.style.display='none';});
+    printDim(`  (filtered for "${esc(grepMatch[1])}")`);
+    return;
+  }
+}
+
+/* ═══ AUTOCOMPLETE ═══ */
+const CMD_LIST=['holders','whales','balance','supply','tx','info','rank','compare','chart','watch','export','alias','motd','theme','clear','help','matrix','moon'];
+
+/* ═══ COMMAND ROUTER ═══ */
+async function runCmd(raw,silent){
+  const input=raw.trim();if(!input)return;
+  if(!silent)printCmd(input);
+
+  /* Check for pipe */
+  let mainCmd=input,pipe=null;
+  if(input.includes('|')){const parts=input.split('|');mainCmd=parts[0].trim();pipe=parts.slice(1).join('|').trim();}
+
+  /* Resolve alias */
+  const parts=mainCmd.split(/\s+/);let cmd=parts[0].toLowerCase();
+  if(aliases[cmd]){const expanded=aliases[cmd]+' '+parts.slice(1).join(' ');return runCmd(expanded,silent);}
+  const arg=parts.slice(1).join(' ');
+
+  const cmdInput=document.getElementById('cmdInput');cmdInput.disabled=true;
+  document.getElementById('sCmd').textContent='Last: '+cmd;
+
+  try{
+    switch(cmd){
+      case'help':case'?':cmdHelp();break;
+      case'holders':await cmdHolders();break;
+      case'whales':await cmdWhales();break;
+      case'balance':case'bal':await cmdBalance(arg);break;
+      case'supply':await cmdSupply();break;
+      case'tx':case'txs':await cmdTx(arg);break;
+      case'info':case'token':await cmdInfo();break;
+      case'rank':await cmdRank(arg);break;
+      case'compare':case'cmp':await cmdCompare(arg);break;
+      case'chart':await cmdChart();break;
+      case'watch':cmdWatch(arg);break;
+      case'export':await cmdExport(arg);break;
+      case'alias':cmdAlias(arg);break;
+      case'motd':cmdMotd();break;
+      case'theme':setTheme(themeIdx+1);printInfo(`Theme: <span class="t-accent">${THEMES[themeIdx].name}</span>`);break;
+      case'matrix':cmdMatrix();break;
+      case'moon':cmdMoon();break;
+      case'clear':case'cls':getOut().innerHTML='';break;
+      case'sound':case'sfx':soundOn=!soundOn;printInfo(`Sound: <span class="t-accent">${soundOn?'ON':'OFF'}</span>`);document.getElementById('btnSound').classList.toggle('active',soundOn);break;
+      default:printErr(`Unknown command: "${esc(cmd)}"`);printDim('Type <span class="t-accent">help</span> for available commands.');
+    }
+  }catch(e){printErr(e.message);}
+
+  /* Apply pipe filter */
+  if(pipe)applyPipe(pipe);
+
+  cmdInput.disabled=false;cmdInput.focus();
+}
+
+/* ═══ INPUT ═══ */
+let history=[];let histIdx=-1;
+try{history=JSON.parse(localStorage.getItem('basis_history')||'[]');}catch(e){}
+function saveHistory(){try{localStorage.setItem('basis_history',JSON.stringify(history.slice(0,100)));}catch(e){}}
+
+const cmdInputEl=document.getElementById('cmdInput');
+cmdInputEl.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    sfx('beep');
+    const val=cmdInputEl.value.trim();
+    if(val){history.unshift(val);saveHistory();}
+    histIdx=-1;cmdInputEl.value='';runCmd(val);
+  } else if(e.key==='ArrowUp'){e.preventDefault();if(histIdx<history.length-1){histIdx++;cmdInputEl.value=history[histIdx];}}
+  else if(e.key==='ArrowDown'){e.preventDefault();if(histIdx>0){histIdx--;cmdInputEl.value=history[histIdx];}else{histIdx=-1;cmdInputEl.value='';}}
+  else if(e.key==='Tab'){
+    e.preventDefault();
+    const val=cmdInputEl.value.toLowerCase().trim();
+    if(val){const match=CMD_LIST.find(c=>c.startsWith(val));if(match){cmdInputEl.value=match+' ';sfx('key');}}
+  } else {setTimeout(()=>sfx('key'),0);}
+});
+
+/* Clickable addresses */
+document.addEventListener('click',e=>{
+  if(e.target.classList.contains('t-addr')){
+    const wallet=e.target.dataset.wallet;if(wallet){cmdInputEl.value='balance '+wallet;runCmd('balance '+wallet);}
+  }
+});
+
+/* Panel click to focus */
+document.getElementById('panel').addEventListener('click',e=>{if(!e.target.closest('.mbar-btn,.tab,.tab-add,.t-copy,.t-addr'))cmdInputEl.focus();});
+
+/* Sound & theme buttons */
+document.getElementById('btnSound').addEventListener('click',()=>{soundOn=!soundOn;document.getElementById('btnSound').classList.toggle('active',soundOn);sfx('beep');});
+document.getElementById('btnTheme').addEventListener('click',()=>{setTheme(themeIdx+1);sfx('beep');});
+
+/* ═══ STATUS BAR ═══ */
+setInterval(()=>{document.getElementById('sTime').textContent=now();},1000);
+
+/* ═══ MATRIX RAIN ═══ */
+function initRain(){
+  const canvas=document.getElementById('rain');const ctx=canvas.getContext('2d');
+  let W,H,cols,drops;
+  const chars='01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン$BASIS'.split('');
+  const fontSize=13;
+  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;cols=Math.ceil(W/fontSize);drops=new Array(cols).fill(0).map(()=>Math.random()*-100);}
+  resize();window.addEventListener('resize',resize);
+  function draw(){
+    requestAnimationFrame(draw);
+    ctx.fillStyle='rgba(0,0,0,0.06)';ctx.fillRect(0,0,W,H);
+    ctx.font=fontSize+'px "IBM Plex Mono",monospace';
+    const hue=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--hue'))||100;
+    const sat=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sat'))||40;
+    for(let i=0;i<cols;i++){
+      const ch=chars[Math.floor(Math.random()*chars.length)];
+      const x=i*fontSize,y=drops[i]*fontSize;
+      ctx.fillStyle=`hsla(${hue},${sat}%,52%,${.05+Math.random()*.08})`;
+      ctx.fillText(ch,x,y);
+      if(Math.random()<.008){ctx.fillStyle=`hsla(${hue},${sat}%,52%,0.40)`;ctx.fillText(ch,x,y);}
+      if(y>H&&Math.random()>.975)drops[i]=0;
+      drops[i]+=.5+Math.random()*.4;
+    }
+  }
+  draw();
+}
+
+/* ═══ BOOT SEQUENCE ═══ */
+async function boot(){
+  const out=getOut();
+  printAscii(`
+ ██████╗  █████╗ ███████╗██╗███████╗
+ ██╔══██╗██╔══██╗██╔════╝██║██╔════╝
+ ██████╔╝███████║███████╗██║███████╗
+ ██╔══██╗██╔══██║╚════██║██║╚════██║
+ ██████╔╝██║  ██║███████║██║███████║
+ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝╚══════╝`);
+
+  const steps=[
+    ['Initializing BASIS Terminal v2.0.0','OK'],
+    ['Connecting to Solana Mainnet','OK'],
+    ['Authenticating Helius RPC','OK'],
+    ['Loading token modules','OK'],
+    ['Syncing on-chain data','OK'],
+    ['Initializing Matrix overlay','OK'],
+    ['Sound system','READY'],
+    ['Terminal ready','ONLINE'],
+  ];
+
+  for(const[msg,status]of steps){
+    await sleep(80+Math.random()*120);
+    const ok=status==='OK'||status==='READY'||status==='ONLINE';
+    print(`<span class="t-dim">  [${ok?'<span class="t-accent">'+status+'</span>':'<span class="t-err">'+status+'</span>'}]</span> <span class="t-info">${msg}</span>`);
+    sfx('key');
+  }
+
+  await sleep(200);
+  printInfo('');
+  await typewrite('  Welcome to the BASIS Terminal. All on-chain data, at your fingertips.',18);
+  await sleep(100);
+  printInfo('  Type <span class="t-accent">help</span> for commands. <span class="t-dim">Press Tab to autocomplete.</span>');
+  printSep();
+  sfx('done');
+}
+
+/* ═══ INIT ═══ */
+function init(){
+  /* Restore theme */
+  try{const t=parseInt(localStorage.getItem('basis_theme'));if(!isNaN(t))setTheme(t);}catch(e){}
+  /* Sound button state */
+  document.getElementById('btnSound').classList.toggle('active',soundOn);
+  /* Create first pane */
+  createPane(0);switchTab(0);renderTabs();
+  /* Start rain */
+  initRain();
+  /* Boot */
+  boot();
+}
+init();
+</script>
+</body>
+</html>
